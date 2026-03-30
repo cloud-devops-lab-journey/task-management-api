@@ -3,7 +3,19 @@ from pydantic import BaseModel, Field
 from datetime import datetime, date
 from typing import List
 
+from sqlalchemy.orm import Session
+from database import SessionLocal
+from models import Task
+
+# Importar engine y Base: la conexión y la base común de SQLAlchemy
+from database import engine, Base
+import models       # hace que SQLAlchemy conozca la clase Task y su tabla
+
 app = FastAPI(title="Task Management API", version="1.0.0")
+
+# Crea en SQLite todas las tablas definidas en los modelos si no existen
+Base.metadata.create_all(bind=engine)
+
 
 # Modelos Pydantic
 class TaskCreate(BaseModel):
@@ -22,13 +34,59 @@ class TaskResponse(BaseModel):
     completada: bool
     fecha_creacion: datetime
 
-# Almacenamiento en memoria
-tasks = {}
-task_counter = 0
+# ---------------- Nuevo codigo para TaskManager --------------
+# Clase TaskManager: contiene la lógica de negocio de las tareas
+class TaskManager:
+    # Constructor: guarda la sesión de base de datos
+    def __init__(self, db: Session):
+        self._db = db
 
-# TODO: Implementar clase TaskManager con lógica de negocio
-# class TaskManager:
-#     ...
+    # Método privado: limpia espacios sobrantes en texto
+    def _clean_text(self, text: str) -> str:
+        return text.strip()
+
+    # Método privado: comprueba si la fecha límite ya ha pasado
+    def _is_expired(self, deadline: date) -> bool:
+        return deadline < date.today()
+
+    # Crea una nueva tarea y la guarda en la base de datos
+    def create_task(self, task_data: TaskCreate) -> Task:
+        new_task = Task(
+            titulo=self._clean_text(task_data.titulo),
+            contenido=self._clean_text(task_data.contenido),
+            deadline=task_data.deadline,
+            completada=False
+        )
+        self._db.add(new_task)
+        self._db.commit()
+        self._db.refresh(new_task)
+        return new_task
+
+    # Busca una tarea por su id
+    def get_task_by_id(self, task_id: int) -> Task:
+        task = self._db.query(Task).filter(Task.id == task_id).first()
+        if not task:
+            raise HTTPException(status_code=404, detail="Tarea no encontrada")
+        return task
+
+    # Marca una tarea como completada
+    def complete_task(self, task_id: int) -> Task:
+        task = self.get_task_by_id(task_id)
+        task.completada = True
+        self._db.commit()
+        self._db.refresh(task)
+        return task
+
+    # Devuelve todas las tareas cuya fecha límite ya ha pasado
+    def get_expired_tasks(self):
+        return self._db.query(Task).filter(Task.deadline < date.today()).all()
+
+    # Elimina una tarea por su id
+    def delete_task(self, task_id: int):
+        task = self.get_task_by_id(task_id)
+        self._db.delete(task)
+        self._db.commit()
+# ---------------- Fin codigo para TaskManager --------------
 
 # TODO: Implementar endpoints
 # @app.post("/tasks/", response_model=TaskResponse, status_code=status.HTTP_201_CREATED)
