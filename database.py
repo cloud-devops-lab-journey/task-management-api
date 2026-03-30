@@ -13,7 +13,7 @@ engine = create_engine(
 )
 
 # Crea sesiones para interactuar con la base de datos
-sessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # Base común desde la que heredarán los modelos/tablas
 Base = declarative_base()

@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, HTTPException, status, Depends # --> Añadir Depends
 from pydantic import BaseModel, Field
 from datetime import datetime, date
 from typing import List
@@ -88,22 +88,47 @@ class TaskManager:
         self._db.commit()
 # ---------------- Fin codigo para TaskManager --------------
 
-# TODO: Implementar endpoints
-# @app.post("/tasks/", response_model=TaskResponse, status_code=status.HTTP_201_CREATED)
-# def crear_tarea(task: TaskCreate):
-#     ...
+# ----- Función auxiliar: abre una sesión de base de datos y la cierra al terminar
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+# ----- Fin Función auxiliar:
 
-# @app.get("/tasks/{task_id}", response_model=TaskResponse)
-# def obtener_tarea(task_id: int):
-#     ...
+# ----------- Endpoint: crea una nueva tarea
+@app.post("/tasks/", response_model=TaskResponse, status_code=status.HTTP_201_CREATED)
+def crear_tarea(task: TaskCreate, db: Session = Depends(get_db)):
+    manager = TaskManager(db)
+    return manager.create_task(task)
 
-# @app.put("/tasks/{task_id}/completar", response_model=TaskResponse)
-# def marcar_completada(task_id: int):
-#     ...
+# Endpoint: obtiene una tarea por su id
+@app.get("/tasks/{task_id}", response_model=TaskResponse)
+def obtener_tarea(task_id: int, db: Session = Depends(get_db)):
+    manager = TaskManager(db)
+    return manager.get_task_by_id(task_id)
 
-# @app.get("/tasks/caducadas", response_model=List[TaskResponse])
-# def obtener_tareas_caducadas():
-#     ...
+# Endpoint: marca una tarea como completada
+@app.put("/tasks/{task_id}/completar", response_model=TaskResponse)
+def marcar_completada(task_id: int, db: Session = Depends(get_db)):
+    manager = TaskManager(db)
+    return manager.complete_task(task_id)
+
+# Endpoint: devuelve la lista de tareas caducadas
+@app.get("/tasks/caducadas", response_model=List[TaskResponse])
+def obtener_tareas_caducadas(db: Session = Depends(get_db)):
+    manager = TaskManager(db)
+    return manager.get_expired_tasks()
+
+# Endpoint: elimina una tarea por su id
+@app.delete("/tasks/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
+def eliminar_tarea(task_id: int, db: Session = Depends(get_db)):
+    manager = TaskManager(db)
+    manager.delete_task(task_id)
+    return None
+
+# -------------- Endpoint end --------------------
 
 @app.get("/")
 def root():
