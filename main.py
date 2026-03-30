@@ -103,6 +103,12 @@ def crear_tarea(task: TaskCreate, db: Session = Depends(get_db)):
     manager = TaskManager(db)
     return manager.create_task(task)
 
+# Endpoint: devuelve la lista de tareas caducadas
+@app.get("/tasks/caducadas", response_model=List[TaskResponse])
+def obtener_tareas_caducadas(db: Session = Depends(get_db)):
+    manager = TaskManager(db)
+    return manager.get_expired_tasks()
+
 # Endpoint: obtiene una tarea por su id
 @app.get("/tasks/{task_id}", response_model=TaskResponse)
 def obtener_tarea(task_id: int, db: Session = Depends(get_db)):
@@ -114,12 +120,6 @@ def obtener_tarea(task_id: int, db: Session = Depends(get_db)):
 def marcar_completada(task_id: int, db: Session = Depends(get_db)):
     manager = TaskManager(db)
     return manager.complete_task(task_id)
-
-# Endpoint: devuelve la lista de tareas caducadas
-@app.get("/tasks/caducadas", response_model=List[TaskResponse])
-def obtener_tareas_caducadas(db: Session = Depends(get_db)):
-    manager = TaskManager(db)
-    return manager.get_expired_tasks()
 
 # Endpoint: elimina una tarea por su id
 @app.delete("/tasks/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
