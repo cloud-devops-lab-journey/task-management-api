@@ -38,13 +38,24 @@ La API estará disponible en `http://localhost:8000`
 
 ## Endpoints
 
-### TODO: Documentar todos los endpoints
-
-- `GET /` - Información de la API
+- `GET /` - Mensaje de bienvenida de la API
 - `POST /tasks/` - Crear una nueva tarea
+- `GET /tasks/caducadas` - Obtener la lista de tareas caducadas
 - `GET /tasks/{task_id}` - Obtener una tarea por ID
 - `PUT /tasks/{task_id}/completar` - Marcar una tarea como completada
-- `GET /tasks/caducadas` - Obtener lista de tareas caducadas
+- `DELETE /tasks/{task_id}` - Eliminar una tarea por ID
+
+## Funcionalidades
+
+La API permite:
+
+- Crear tareas con título, contenido y fecha límite
+- Consultar una tarea a partir de su ID
+- Marcar una tarea como completada
+- Obtener la lista de tareas caducadas
+- Eliminar tareas
+- Guardar la información en una base de datos SQLite
+- Probar automáticamente los endpoints con un script en Python usando `requests`
 
 ## Ejecutar tests
 
