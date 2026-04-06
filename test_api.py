@@ -88,6 +88,41 @@ def test_obtener_tareas_caducadas(task_id):
     print(f"Test obtener tareas caducadas OK. ID encontrada: {task_id}")
 
 
+# Test: envía datos incorrectos y comprueba que la API devuelve error de validación
+def test_datos_incorrectos():
+    # Payload incorrecto: faltan campos obligatorios y deadline no tiene formato válido
+    payload = {
+        "titulo": "",
+        "contenido": "Contenido incorrecto",
+        "deadline": "fecha-mal-formada"
+    }
+
+    # Envía la petición POST con datos inválidos
+    response = requests.post(f"{BASE_URL}/tasks/", json=payload)
+
+    # Comprueba que la API devuelve un error de validación
+    assert response.status_code in [400, 422], f"Error: {response.status_code} - {response.text}"
+
+    print(f"Test datos incorrectos OK. Código recibido: {response.status_code}")
+
+
+# Test: elimina una tarea y comprueba que después ya no existe
+def test_eliminar_tarea(task_id):
+    # Envía la petición DELETE al endpoint de borrado
+    response = requests.delete(f"{BASE_URL}/tasks/{task_id}")
+
+    # Comprueba que el código HTTP sea 204
+    assert response.status_code == 204, f"Error: {response.status_code} - {response.text}"
+
+    # Intenta obtener la misma tarea después de borrarla
+    response_get = requests.get(f"{BASE_URL}/tasks/{task_id}")
+
+    # Comprueba que ahora devuelve 404 porque ya no existe
+    assert response_get.status_code == 404, f"Error: {response_get.status_code} - {response_get.text}"
+
+    print(f"Test eliminar tarea OK. ID eliminada: {task_id}")
+
+
 if __name__ == "__main__":
     print("Ejecutando tests...")
 
@@ -103,5 +138,11 @@ if __name__ == "__main__":
 
     # Ejecuta el test de tareas caducadas
     test_obtener_tareas_caducadas(task_id)
+
+    # Ejecuta el test de datos incorrectos
+    test_datos_incorrectos()
+
+    # Ejecuta el test de eliminación
+    test_eliminar_tarea(task_id)
 
     print("Tests completados")
